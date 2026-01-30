@@ -1,0 +1,436 @@
+import QtQuick
+import QtQuick.Shapes
+
+Window {
+    id: root
+    width: 800
+    height: 600
+    visible: true
+
+    signal segmentClicked(string segmentId)
+
+    readonly property real centerX: width / 2
+    readonly property real centerY: height / 2
+    readonly property real outerRadius: Math.min(width, height) * 0.35
+    readonly property real innerRadius: outerRadius * 0.75
+    readonly property real outerBatRadius: Math.min(width, height) * 0.5
+    readonly property real inBatRadius: outerBatRadius * 0.75
+
+    // Helper function: polar to cartesian
+    function point(angleDeg, radius) {
+        const rad = angleDeg * Math.PI / 180
+        return Qt.point(
+            centerX + Math.cos(rad) * radius,
+            centerY - Math.sin(rad) * radius
+        )
+    }
+
+    // Utility: build a sampled polygon (outer arc then inner arc reversed)
+    function makeSectorPolygon(startDeg, endDeg, innerR, outerR, steps) {
+        var poly = []
+        var total = Math.max(3, steps || 40)
+        var step = (endDeg - startDeg) / total
+        // outer arc from start -> end
+        for (var i = 0; i <= total; ++i) {
+            var d = startDeg + i * step
+            poly.push(point(d, outerR))
+        }
+        // inner arc from end -> start
+        for (var j = 0; j <= total; ++j) {
+            var d2 = endDeg - j * step
+            poly.push(point(d2, innerR))
+        }
+        return poly
+    }
+
+    // Ray-casting point-in-polygon (standard) - expects polygon as array of Qt.point objects
+    function pointInPolygon(pt, poly) {
+        var x = pt.x, y = pt.y
+        var inside = false
+        for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            var xi = poly[i].x, yi = poly[i].y
+            var xj = poly[j].x, yj = poly[j].y
+            var intersect = ((yi > y) !== (yj > y)) &&
+                            (x < (xj - xi) * (y - yi) / (yj - yi + 0.0) + xi)
+            if (intersect) inside = !inside
+        }
+        return inside
+    }
+
+    // polygons for hit-testing (kept up-to-date by rebuildPolygons)
+    property var e1Poly: []
+    property var e2Poly: []
+    property var e3Poly: []
+    property var e4Poly: []
+    property var eclairPoly: []
+
+    // Recompute polygons (call when geometry or radii change)
+    function rebuildPolygons() {
+        e1Poly = makeSectorPolygon(e1.start_deg, e1.end_deg, innerRadius, outerRadius, 60)
+        e2Poly = makeSectorPolygon(e2.start_deg, e2.end_deg, innerRadius, outerRadius, 60)
+        e3Poly = makeSectorPolygon(e3.start_deg, e3.end_deg, innerRadius, outerRadius, 60)
+        e4Poly = makeSectorPolygon(e4.start_deg, e4.end_deg, innerRadius, outerRadius, 60)
+
+        // Eclair polygon built from the same points you used in the eclair ShapePath
+        eclairPoly = [
+            point(4, outerRadius),
+            point(13, innerRadius),
+            Qt.point(centerX, centerY),
+            Qt.point(0.0669*width + centerX, centerY + 0.05*height),
+            point(223, innerRadius),
+            Qt.point(0.16*width + centerX, centerY + 0.055*height),
+            Qt.point(0.1*width + centerX, centerY + 0.02*height)
+        ]
+    }
+
+    onWidthChanged: rebuildPolygons()
+    onHeightChanged: rebuildPolygons()
+    // when outer/inner radius changes, recompute too
+    onOuterRadiusChanged: rebuildPolygons()
+    onInnerRadiusChanged: rebuildPolygons()
+    Component.onCompleted: rebuildPolygons()
+
+    Shape {
+        anchors.fill: parent
+
+        // ---- Segment 1 ----
+        ShapePath {
+            id: e1
+
+            fillColor: "#b82c2c"
+            strokeColor: "#000000"
+            strokeWidth: 2
+
+            property int start_deg: 4
+            property int end_deg: 82
+            property real sx: point(start_deg, outerRadius).x
+            property real sy: point(start_deg, outerRadius).y
+
+            startX: sx
+            startY: sy
+
+            PathArc {
+                x: point(e1.end_deg, outerRadius).x
+                y: point(e1.end_deg, outerRadius).y
+                radiusX: outerRadius
+                radiusY: outerRadius
+                direction: PathArc.Counterclockwise
+            }
+
+            PathLine {
+                x: point(e1.end_deg, innerRadius).x
+                y: point(e1.end_deg, innerRadius).y
+            }
+
+            PathArc {
+                x: point(13, innerRadius).x
+                y: point(13, innerRadius).y
+                radiusX: innerRadius
+                radiusY: innerRadius
+            }
+
+            PathLine {
+                x: e1.sx
+                y: e1.sy
+            }
+        }
+
+        // ---- Segment 2 ----
+        ShapePath {
+            id: e2
+
+            fillColor: "#b8932c"
+            strokeColor: "transparent"
+
+            property int start_deg: 82
+            property int end_deg: 160
+            property real sx: point(start_deg, outerRadius).x
+            property real sy: point(start_deg, outerRadius).y
+
+            startX: sx
+            startY: sy
+
+            PathArc {
+                x: point(e2.end_deg, outerRadius).x
+                y: point(e2.end_deg, outerRadius).y
+                radiusX: outerRadius
+                radiusY: outerRadius
+                direction: PathArc.Counterclockwise
+            }
+
+            PathLine {
+                x: point(e2.end_deg, innerRadius).x
+                y: point(e2.end_deg, innerRadius).y
+            }
+
+            PathArc {
+                x: point(e2.start_deg, innerRadius).x
+                y: point(e2.start_deg, innerRadius).y
+                radiusX: innerRadius
+                radiusY: innerRadius
+            }
+
+            PathLine {
+                x: e2.sx
+                y: e2.sy
+            }
+        }
+
+
+        // ---- Segment 3 ----
+        ShapePath {
+            id: e3
+
+            fillColor: "#074824"
+            strokeColor: "transparent"
+
+            property int start_deg: 160
+            property int end_deg: 240
+            property real sx: point(start_deg, outerRadius).x
+            property real sy: point(start_deg, outerRadius).y
+
+            startX: sx
+            startY: sy
+
+            PathArc {
+                x: point(e3.end_deg, outerRadius).x
+                y: point(e3.end_deg, outerRadius).y
+                radiusX: outerRadius
+                radiusY: outerRadius
+                direction: PathArc.Counterclockwise
+            }
+
+            PathLine {
+                x: point(e3.end_deg, innerRadius).x
+                y: point(e3.end_deg, innerRadius).y
+            }
+
+            PathArc {
+                x: point(e3.start_deg, innerRadius).x
+                y: point(e3.start_deg, innerRadius).y
+                radiusX: innerRadius
+                radiusY: innerRadius
+            }
+
+            PathLine {
+                x: e3.sx
+                y: e3.sy
+            }
+        }
+
+        // ---- Segment 4 ----
+        ShapePath {
+            id: e4
+
+            fillColor: "#48072c"
+            strokeColor: "transparent"
+
+            property int start_deg: 240
+            property int end_deg: 320
+            property real sx: point(start_deg, outerRadius).x
+            property real sy: point(start_deg, outerRadius).y
+
+            startX: sx
+            startY: sy
+
+            PathArc {
+                x: point(e4.end_deg, outerRadius).x
+                y: point(e4.end_deg, outerRadius).y
+                radiusX: outerRadius
+                radiusY: outerRadius
+                direction: PathArc.Counterclockwise
+            }
+
+            PathLine {
+                x: point(e4.end_deg, innerRadius).x
+                y: point(e4.end_deg, innerRadius).y
+            }
+
+            PathArc {
+                x: point(e4.start_deg, innerRadius).x
+                y: point(e4.start_deg, innerRadius).y
+                radiusX: innerRadius
+                radiusY: innerRadius
+            }
+
+            PathLine {
+                x: e4.sx
+                y: e4.sy
+            }
+        }
+
+        // Eclair
+        ShapePath {
+            id: eclair
+
+            fillColor: "#f685b2"
+            strokeColor: "#2fff00"
+            strokeWidth: 2
+
+            property real sx: point(4, outerRadius).x
+            property real sy: point(4, outerRadius).y
+
+            startX: sx
+            startY: sy
+
+            // Point 2    
+            PathLine {
+                x: point(13, innerRadius).x
+                y: point(13, innerRadius).y
+            }
+            // Point 3
+            PathLine {
+                x: centerX
+                y: centerY
+            }
+            // Point 4
+            PathLine {
+                x: 0.0669*width + centerX
+                y: centerY + 0.05*height
+            }
+            // Point 5
+            PathLine {
+                x: point(223, innerRadius).x
+                y: point(223, innerRadius).y
+            }
+            // Point 6
+            PathLine {
+                x: 0.16*width + centerX
+                y: centerY + 0.055*height
+            }
+            // Point 7
+            PathLine {
+                x: 0.1*width + centerX
+                y: centerY + 0.02*height
+            }
+
+            PathLine {
+                x: eclair.sx
+                y: eclair.sy
+            }
+        }
+
+        ShapePath {
+            id: battery      
+            
+            fillColor: "#2bc61a"
+
+            property real sx: point(0, outerBatRadius).x
+            property real sy: point(0, outerBatRadius).y
+            property real end_deg: -(backend.batteryLevel * 359)
+            property bool largeArc: Math.abs(end_deg) > 180.0
+
+            startX: sx
+            startY: sy
+
+            PathArc {
+                x: point(battery.end_deg, outerBatRadius).x
+                y: point(battery.end_deg, outerBatRadius).y
+                radiusX: outerBatRadius
+                radiusY: outerBatRadius
+                useLargeArc: battery.largeArc
+            }
+
+            PathLine {
+                x: point(battery.end_deg, inBatRadius).x
+                y: point(battery.end_deg, inBatRadius).y
+            }
+
+            PathArc {
+                x: point(0, inBatRadius).x
+                y: point(0, inBatRadius).y
+                radiusX: inBatRadius
+                radiusY: inBatRadius
+                direction: PathArc.Counterclockwise
+                useLargeArc: battery.largeArc
+            }
+
+            PathLine {
+                x: point(0, outerBatRadius).x
+                y: point(0, outerBatRadius).y
+            }
+        }
+
+        ShapePath {
+            id: batteryBox      
+            
+            fillColor: "transparent"
+            strokeColor: "#000000"
+            strokeWidth: 2
+
+            property real sx: point(0, outerBatRadius).x
+            property real sy: point(0, outerBatRadius).y
+            property real end_deg: -359
+
+            startX: sx
+            startY: sy
+
+            PathArc {
+                x: point(batteryBox.end_deg, outerBatRadius).x
+                y: point(batteryBox.end_deg, outerBatRadius).y
+                radiusX: outerBatRadius
+                radiusY: outerBatRadius
+                useLargeArc: true
+            }
+
+            PathLine {
+                x: point(batteryBox.end_deg, inBatRadius).x
+                y: point(batteryBox.end_deg, inBatRadius).y
+            }
+
+            PathArc {
+                x: point(0, inBatRadius).x
+                y: point(0, inBatRadius).y
+                radiusX: inBatRadius
+                radiusY: inBatRadius
+                direction: PathArc.Counterclockwise
+                useLargeArc: true
+            }
+
+            PathLine {
+                x: point(0, outerBatRadius).x
+                y: point(0, outerBatRadius).y
+            }
+        }
+    }
+
+
+    // A single MouseArea covering the window does hover + click hit testing
+    MouseArea {
+        id: clickArea
+        anchors.fill: parent
+        hoverEnabled: false
+        cursorShape: Qt.ArrowCursor
+
+        property var lastClickedShape: null
+
+        onClicked: {
+            var p = Qt.point(mouse.x, mouse.y)
+            if (pointInPolygon(p, root.e1Poly)) {
+                console.log("Clicked: Segment 1")
+                clickArea.lastClickedShape = e1
+                e1.fillColor = "#123456"
+                root.segmentClicked("segment 1")
+            } else if (pointInPolygon(p, root.e2Poly)) {
+                console.log("Clicked: Segment 2")
+                clickArea.lastClickedShape = e2
+                e2.fillColor = "#123456"
+            } else if (pointInPolygon(p, root.e3Poly)) {
+                console.log("Clicked: Segment 3")
+                clickArea.lastClickedShape = e3
+                e3.fillColor = "#123456"
+            } else if (pointInPolygon(p, root.e4Poly)) {
+                console.log("Clicked: Segment 4")
+                clickArea.lastClickedShape = e4
+                e4.fillColor = "#123456"
+            } else if (pointInPolygon(p, root.eclairPoly)) {
+                console.log("Clicked: Eclair")
+                clickArea.lastClickedShape = eclair
+                eclair.fillColor = "#123456"
+            } else {
+                console.log("Clicked: background")
+                clickArea.lastClickedShape = null
+            }
+        }
+    }
+}
