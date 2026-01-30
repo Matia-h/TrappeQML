@@ -49,7 +49,7 @@ if __name__ == "__main__":
     counter = [0]  # Use list to modify in closure
     
     def update_battery():
-        if counter[0] < 100:
+        if counter[0] < 101:
             backend.setBatteryLevel(counter[0] / 100.0)
             counter[0] += 1
         else:
