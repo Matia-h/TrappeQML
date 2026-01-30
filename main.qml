@@ -98,8 +98,7 @@ Window {
             id: e1
 
             fillColor: "#b82c2c"
-            strokeColor: "#000000"
-            strokeWidth: 2
+            strokeColor: "transparent"
 
             property int start_deg: 4
             property int end_deg: 82
