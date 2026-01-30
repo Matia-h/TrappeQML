@@ -97,9 +97,8 @@ Window {
         ShapePath {
             id: e1
 
-            fillColor: "#b82c2c"
+            fillColor: "#27428f"
             strokeColor: "#000000"
-            strokeWidth: 2
 
             property int start_deg: 4
             property int end_deg: 82
@@ -139,8 +138,8 @@ Window {
         ShapePath {
             id: e2
 
-            fillColor: "#b8932c"
-            strokeColor: "transparent"
+            fillColor: "#27428f"
+            strokeColor: "#000000"
 
             property int start_deg: 82
             property int end_deg: 160
@@ -181,8 +180,8 @@ Window {
         ShapePath {
             id: e3
 
-            fillColor: "#074824"
-            strokeColor: "transparent"
+            fillColor: "#27428f"
+            strokeColor: "#000000"
 
             property int start_deg: 160
             property int end_deg: 240
@@ -222,8 +221,8 @@ Window {
         ShapePath {
             id: e4
 
-            fillColor: "#48072c"
-            strokeColor: "transparent"
+            fillColor: "#27428f"
+            strokeColor: "#000000"
 
             property int start_deg: 240
             property int end_deg: 320
@@ -263,8 +262,8 @@ Window {
         ShapePath {
             id: eclair
 
-            fillColor: "#f685b2"
-            strokeColor: "#2fff00"
+            fillColor: "#27428f"
+            strokeColor: "#cee002"
             strokeWidth: 2
 
             property real sx: point(4, outerRadius).x
@@ -313,12 +312,23 @@ Window {
         ShapePath {
             id: battery      
             
-            fillColor: "#2bc61a"
+            fillGradient: ConicalGradient {
+                centerX: root.centerX
+                centerY: root.centerY
 
-            property real sx: point(0, outerBatRadius).x
-            property real sy: point(0, outerBatRadius).y
-            property real end_deg: -(backend.batteryLevel * 359)
-            property bool largeArc: Math.abs(end_deg) > 180.0
+                angle: 120
+
+                GradientStop { position: 0.0; color: "#20c50e" }
+                GradientStop { position: 0.5; color: "#eeff00" }
+                GradientStop { position: 5/6; color: "#c00a00" }
+            }
+
+            strokeColor: "#000000"
+
+            property real sx: point(60, outerBatRadius).x
+            property real sy: point(60, outerBatRadius).y
+            property real end_deg: 60 - backend.batteryLevel * 300
+            property bool largeArc: Math.abs(end_deg) > 120.0
 
             startX: sx
             startY: sy
@@ -337,8 +347,8 @@ Window {
             }
 
             PathArc {
-                x: point(0, inBatRadius).x
-                y: point(0, inBatRadius).y
+                x: point(60, inBatRadius).x
+                y: point(60, inBatRadius).y
                 radiusX: inBatRadius
                 radiusY: inBatRadius
                 direction: PathArc.Counterclockwise
@@ -346,8 +356,8 @@ Window {
             }
 
             PathLine {
-                x: point(0, outerBatRadius).x
-                y: point(0, outerBatRadius).y
+                x: point(60, outerBatRadius).x
+                y: point(60, outerBatRadius).y
             }
         }
 
@@ -358,9 +368,9 @@ Window {
             strokeColor: "#000000"
             strokeWidth: 2
 
-            property real sx: point(0, outerBatRadius).x
-            property real sy: point(0, outerBatRadius).y
-            property real end_deg: -359
+            property real sx: point(60, outerBatRadius).x
+            property real sy: point(60, outerBatRadius).y
+            property real end_deg: -240
 
             startX: sx
             startY: sy
@@ -379,8 +389,8 @@ Window {
             }
 
             PathArc {
-                x: point(0, inBatRadius).x
-                y: point(0, inBatRadius).y
+                x: point(60, inBatRadius).x
+                y: point(60, inBatRadius).y
                 radiusX: inBatRadius
                 radiusY: inBatRadius
                 direction: PathArc.Counterclockwise
@@ -388,8 +398,8 @@ Window {
             }
 
             PathLine {
-                x: point(0, outerBatRadius).x
-                y: point(0, outerBatRadius).y
+                x: point(60, outerBatRadius).x
+                y: point(60, outerBatRadius).y
             }
         }
     }

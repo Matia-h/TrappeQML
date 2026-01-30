@@ -312,7 +312,18 @@ Window {
         ShapePath {
             id: battery      
             
-            fillColor: "#2bc61a"
+            fillGradient: ConicalGradient {
+                centerX: root.centerX
+                centerY: root.centerY
+
+                angle: 120
+
+                GradientStop { position: 0.0; color: "#20c50e" }
+                GradientStop { position: 0.5; color: "#eeff00" }
+                GradientStop { position: 5/6; color: "#c00a00" }
+            }
+
+            strokeColor: "#000000"
 
             property real sx: point(60, outerBatRadius).x
             property real sy: point(60, outerBatRadius).y
