@@ -7,7 +7,7 @@ Window {
     height: 600
     visible: true
 
-    signal segmentClicked(string segmentId)
+    signal userAction(var payload)
 
     readonly property real centerX: width / 2
     readonly property real centerY: height / 2
@@ -319,7 +319,7 @@ Window {
                 angle: 120
 
                 GradientStop { position: 0.0; color: "#20c50e" }
-                GradientStop { position: 0.5; color: "#eeff00" }
+                GradientStop { position: 0.45; color: "#eeff00" }
                 GradientStop { position: 5/6; color: "#c00a00" }
             }
 
@@ -409,38 +409,109 @@ Window {
     MouseArea {
         id: clickArea
         anchors.fill: parent
-        hoverEnabled: false
-        cursorShape: Qt.ArrowCursor
+        hoverEnabled: true
+
+        property bool dragging: false
+        property point pressPos
+        property var visitedSegments: ({})   // set-like object
+
+        readonly property int dragThreshold: 10
 
         property var lastClickedShape: null
 
         onClicked: {
+            if (dragging)
+                return   // ⬅️ prevent click logic after a drag
             var p = Qt.point(mouse.x, mouse.y)
             if (pointInPolygon(p, root.e1Poly)) {
-                console.log("Clicked: Segment 1")
+                //console.log("Clicked: Segment 1")
                 clickArea.lastClickedShape = e1
                 e1.fillColor = "#123456"
-                root.segmentClicked("segment 1")
             } else if (pointInPolygon(p, root.e2Poly)) {
-                console.log("Clicked: Segment 2")
+                //console.log("Clicked: Segment 2")
                 clickArea.lastClickedShape = e2
                 e2.fillColor = "#123456"
             } else if (pointInPolygon(p, root.e3Poly)) {
-                console.log("Clicked: Segment 3")
+                //console.log("Clicked: Segment 3")
                 clickArea.lastClickedShape = e3
                 e3.fillColor = "#123456"
             } else if (pointInPolygon(p, root.e4Poly)) {
-                console.log("Clicked: Segment 4")
+                //console.log("Clicked: Segment 4")
                 clickArea.lastClickedShape = e4
                 e4.fillColor = "#123456"
             } else if (pointInPolygon(p, root.eclairPoly)) {
-                console.log("Clicked: Eclair")
+                //console.log("Clicked: Eclair")
                 clickArea.lastClickedShape = eclair
                 eclair.fillColor = "#123456"
             } else {
-                console.log("Clicked: background")
+                //console.log("Clicked: background")
                 clickArea.lastClickedShape = null
             }
         }
+
+        onPressed: {
+            dragging = false
+            pressPos = Qt.point(mouse.x, mouse.y)
+            visitedSegments = ({})
+        }
+
+        onPositionChanged: {
+            if (!pressed)
+                return
+
+            var dx = mouse.x - pressPos.x
+            var dy = mouse.y - pressPos.y
+
+            if (!dragging && Math.sqrt(dx*dx + dy*dy) > dragThreshold) {
+                dragging = true
+            }
+
+            if (dragging) {
+                var p = Qt.point(mouse.x, mouse.y)
+                var seg = segmentAtPoint(p)
+
+                if (seg && !visitedSegments[seg]) {
+                    visitedSegments[seg] = true
+
+                    switch (seg) {
+                    case "e1": e1.fillColor = "#ff8800"; break
+                    case "e2": e2.fillColor = "#ff8800"; break
+                    case "e3": e3.fillColor = "#ff8800"; break
+                    case "e4": e4.fillColor = "#ff8800"; break
+                    case "e5": eclair.fillColor = "#ff8800"; break
+                    }
+
+                    //console.log("Gesture touched:", seg)
+                }
+            }
+        }
+
+        onReleased: {
+            var p = Qt.point(mouse.x, mouse.y)
+            var seg = segmentAtPoint(p)
+
+
+            if (!dragging && seg) {
+                root.userAction({
+                    type: "click",
+                    segment: seg
+                })
+            } else if (dragging) {
+                root.userAction({
+                    type: "drag",
+                    segments: Object.keys(visitedSegments)
+                })
+            }
+        }
+
+        function segmentAtPoint(p) {
+            if (pointInPolygon(p, e1Poly)) return "e1"
+            if (pointInPolygon(p, e2Poly)) return "e2"
+            if (pointInPolygon(p, e3Poly)) return "e3"
+            if (pointInPolygon(p, e4Poly)) return "e4"
+            if (pointInPolygon(p, eclairPoly)) return "e5"
+            return null
+        }       
+
     }
 }
