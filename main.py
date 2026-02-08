@@ -13,6 +13,7 @@ class AppState(Enum):
 class Backend(QObject):
     batteryLevelChanged = Signal()
     stateChanged = Signal(str)
+    pinFailed = Signal()
 
     def __init__(self):
         super().__init__()
@@ -67,13 +68,13 @@ class Backend(QObject):
         if len(self.pin_buffer) < PIN_LENGTH:
             return
 
-        # Now we have full PIN → validate
         if self.pin_buffer == PIN_CODE:
             print("🔓 UNLOCKED")
             self.state = AppState.UNLOCKED
             self.stateChanged.emit(self.state.value)
         else:
             print("❌ WRONG PIN")
+            self.pinFailed.emit()
 
         # Always reset buffer
         self.pin_buffer.clear()
