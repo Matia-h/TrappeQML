@@ -6,6 +6,7 @@ Window {
     width: 800
     height: 600
     visible: true
+    visibility: "FullScreen"
 
     signal userAction(var payload)
 
@@ -83,12 +84,16 @@ Window {
         ]
     }
 
-    onWidthChanged: rebuildPolygons()
-    onHeightChanged: rebuildPolygons()
+    function scheduleRebuild() {
+        Qt.callLater(rebuildPolygons)
+    }
+
+    onWidthChanged: scheduleRebuild()
+    onHeightChanged: scheduleRebuild()
     // when outer/inner radius changes, recompute too
-    onOuterRadiusChanged: rebuildPolygons()
-    onInnerRadiusChanged: rebuildPolygons()
-    Component.onCompleted: rebuildPolygons()
+    onOuterRadiusChanged: scheduleRebuild()
+    onInnerRadiusChanged: scheduleRebuild()
+    Component.onCompleted: scheduleRebuild()
 
     Shape {
         anchors.fill: parent
