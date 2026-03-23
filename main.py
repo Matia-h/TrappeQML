@@ -21,6 +21,11 @@ class Backend(QObject):
         self.state = AppState.LOCKED
         self.pin_buffer = []
 
+        self._batteryTimer = QTimer()
+        self._batteryTimer.timeout.connect(self._update_battery)
+
+        self._batteryDirection = 0   # +1 = charging, -1 = discharging
+
 
     def getBatteryLevel(self):
         return self._batteryLevel
@@ -31,6 +36,21 @@ class Backend(QObject):
         if self._batteryLevel != value:
             self._batteryLevel = value
             self.batteryLevelChanged.emit()
+
+    def _update_battery(self):
+        step = 0.01 * self._batteryDirection
+
+        new_value = self._batteryLevel + step
+
+        # Clamp and stop at limits
+        if new_value >= 1.0:
+            self.setBatteryLevel(1.0)
+            self._batteryTimer.stop()
+        elif new_value <= 0.0:
+            self.setBatteryLevel(0.0)
+            self._batteryTimer.stop()
+        else:
+            self.setBatteryLevel(new_value)
 
 
     batteryLevel = Property(
@@ -99,22 +119,19 @@ class Backend(QObject):
 
             if segments == ["e5", "e1", "e2", "e3", "e4"]:
                 self._charge_battery()
+            elif segments == ["e4","e3","e2","e1","e5"]:
+                self._discharge_battery()
 
     
     def _charge_battery(self):
-        # Use QTimer to update battery level periodically
-        counter = [0]  # Use list to modify in closure
-        
-        def update_battery():
-            if counter[0] < 101:
-                backend.setBatteryLevel(counter[0] / 100.0)
-                counter[0] += 1
-            else:
-                timer.stop()
-        
-        timer = QTimer()
-        timer.timeout.connect(update_battery)
-        timer.start(100)
+        self._batteryTimer.stop()
+        self._batteryDirection = 1
+        self._batteryTimer.start(100)
+
+    def _discharge_battery(self):
+        self._batteryTimer.stop()
+        self._batteryDirection = -1
+        self._batteryTimer.start(200)  # slower discharge feels more natural
 
 
 if __name__ == "__main__":
