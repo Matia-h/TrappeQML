@@ -16,6 +16,7 @@ Window {
     readonly property real innerRadius: outerRadius * 0.75
     readonly property real outerBatRadius: Math.min(width, height) * 0.5
     readonly property real inBatRadius: outerBatRadius * 0.75
+    readonly property color defaultSegmentColor: "#27428f"
 
     // Helper function: polar to cartesian
     function point(angleDeg, radius) {
@@ -86,6 +87,14 @@ Window {
 
     function scheduleRebuild() {
         Qt.callLater(rebuildPolygons)
+    }
+
+    function resetSegmentColors() {
+        e1.fillColor = defaultSegmentColor
+        e2.fillColor = defaultSegmentColor
+        e3.fillColor = defaultSegmentColor
+        e4.fillColor = defaultSegmentColor
+        eclair.fillColor = defaultSegmentColor
     }
 
     onWidthChanged: scheduleRebuild()
@@ -468,6 +477,7 @@ Window {
                 dragging = false
                 pressPos = Qt.point(mouse.x, mouse.y)
                 visitedSegments = ({})
+                resetSegmentColors()   // optional: clears any previous highlight at the start
             }
 
             onPositionChanged: {
@@ -517,6 +527,8 @@ Window {
                         segments: Object.keys(visitedSegments)
                     })
                 }
+                
+                resetSegmentColors()   // restore the normal color after the interaction ends
             }
 
             function segmentAtPoint(p) {
